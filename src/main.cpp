@@ -4,14 +4,19 @@
 #include<complex>
 #include<SFML/Graphics.hpp>
 
+// Context for easy access
 sf::RenderWindow* globWin;
 
+// Standard mapping function: for given x in range (a, b) convert that number to proper number in range (c, d)
+// It works just like in arduino
 template <typename T>
 T mapRangeNumber(T x, T in_min, T in_max, T out_min, T out_max)
 {
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+// Function which is used to count if given x belongs to mandelbrot set.
+// max_iters is like epsilon in numeric operations - it is a factor approximation used in formula.
 int mandelbrot(std::complex<double> x, int max_iter)
 {
 	int i = 0;
@@ -24,6 +29,7 @@ int mandelbrot(std::complex<double> x, int max_iter)
 	return i == max_iter ? 0 : i;
 }
 
+// This function updates canvas by generating mandelbrot set properly to given parameters
 void updateCnv(
 	sf::Image &cnv,
 	int    a_max_iter = 100,
@@ -65,17 +71,20 @@ void updateCnv(
 
 int main(int argc, char* argv[])
 {
+	// Window initialization
 	const int WIDTH = 1600, HEIGHT = 900;
 	sf::RenderWindow win(sf::VideoMode(WIDTH, HEIGHT), "SFML1");
 	win.setFramerateLimit(60);
+	sf::Color backgroundColor(sf::Color::Black);
 	globWin = &win;
 
+	// Clock for timing
 	sf::Clock clock;
 
+	// Easy access to real time keyboard input using map
 	std::map<int, bool> keys;
 
-	sf::Color backgroundColor(sf::Color::Black);
-
+	// Canvas and texture initialization
 	sf::Image im;
 	im.create(win.getSize().x, win.getSize().y);
 	updateCnv(im);
@@ -83,45 +92,52 @@ int main(int argc, char* argv[])
 	im_t.loadFromImage(im);
 	sf::Sprite im_s(im_t);
 
+	// Parameters used in update function
 	double centerX = 0.f;
 	double centerY = 0.f;
 	double limit = 2.f;
 	int max_iter = 30;
 
-
 	clock.restart();
 	while(win.isOpen())
 	{
 		sf::Time frameStart = clock.restart(); 
-		sf::Event evnt;
-		while(win.pollEvent(evnt))
+		// Event checking loop
+		for(sf::Event event; win.pollEvent(event);)
 		{
-			switch(evnt.type)
+			switch(event.type)
 			{
+				// Window exit event
 				case sf::Event::Closed:
 					win.close();
 				break;
-				case sf::Event::KeyPressed:
-					keys[evnt.key.code] = true;
-				switch(evnt.key.code)
-				{
-					case sf::Keyboard::Escape:
-						win.close();
-					break;
-					case sf::Keyboard::Q:
-						limit *= 1.f-0.1f;
-						updateCnv(im, max_iter, limit, centerX, centerY);
-					break;
-					case sf::Keyboard::A:
-						limit *= 1.f+0.1f;
-						updateCnv(im, max_iter, limit, centerX, centerY);
-					break;
-				} break;
 
-				case sf::Event::KeyReleased:
-					keys[evnt.key.code] = false;
+				// Keyboard event
+				case sf::Event::KeyPressed:
+					keys[event.key.code] = true; // real time event
+
+					// These events are not used for real time 
+					switch(event.key.code)
+					{
+						case sf::Keyboard::Escape:
+							win.close();
+						break;
+						case sf::Keyboard::Q:
+							limit *= 1.f-0.1f;
+							updateCnv(im, max_iter, limit, centerX, centerY);
+						break;
+						case sf::Keyboard::A:
+							limit *= 1.f+0.1f;
+							updateCnv(im, max_iter, limit, centerX, centerY);
+						break;
+					}
 				break;
 
+				case sf::Event::KeyReleased:
+					keys[event.key.code] = false; //real time event
+				break;
+
+				// Updating window rendering if it has been resized
 				case sf::Event::Resized:
 					win.setView(sf::View(sf::FloatRect(0, 0, win.getSize().x, win.getSize().y)));
 					im.create(win.getSize().x, win.getSize().y);
@@ -133,12 +149,20 @@ int main(int argc, char* argv[])
 				default: break;
 			}
 		}
+		// Texture update from image 
 		im_t.update(im);
 
 
+		// Clearing window 
 		win.clear(backgroundColor);
+		// Drawing things on screen
 		win.draw(im_s);
+
+		
+		// And finally displaying those things
 		win.display();
+
+		//
 		sf::Time deltaFrame = clock.getElapsedTime() - frameStart; 
 		win.setTitle("FRAME TIME: " +
 				std::to_string(1000.f / deltaFrame.asMilliseconds()));

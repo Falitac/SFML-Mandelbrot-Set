@@ -133,14 +133,6 @@ int main(int argc, char* argv[])
 				default: break;
 			}
 		}
-		if(keys[sf::Keyboard::Left])
-			centerX -= 0.1f;
-		if(keys[sf::Keyboard::Right])
-			centerX += 0.1f;
-		if(keys[sf::Keyboard::Up])
-			centerY -= 0.1f;
-		if(keys[sf::Keyboard::Down])
-			centerY += 0.1f;
 		im_t.update(im);
 
 
