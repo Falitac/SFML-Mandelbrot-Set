@@ -1,1 +1,3 @@
-# SFML-Mandelbrot-Set
+# C++ Mandelbrot set generator
+
+![Screenshot:](/screen.png)
