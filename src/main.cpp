@@ -45,6 +45,8 @@ void updateCnv(
 	double limit = a_limit;
 	double centerX = a_centerX;
 	double centerY = a_centerY;
+
+	// Loop for each pixel on canvas
 	for(int x=0;x<cnv.getSize().x;x++)
 	for(int y=0;y<cnv.getSize().y;y++)
 	{
@@ -65,29 +67,31 @@ void updateCnv(
 				  	limit + centerY
 					);
 		int m = mandelbrot(std::complex<double>( {mappedX, mappedY} ), max_iter);
-		cnv.setPixel(x, y, sf::Color(255, 255, 255, 255*m/max_iter));
+		//m = 255*std::log2(m)/std::log2(max_iter);
+		m = 255*m/max_iter;
+
+		cnv.setPixel(x, y, sf::Color(255, 255, 255, m));
 	}
 }
 
 int main(int argc, char* argv[])
 {
 	// Window initialization
-	const int WIDTH = 1600, HEIGHT = 900;
+	const int WIDTH = 640, HEIGHT = 360;
 	sf::RenderWindow win(sf::VideoMode(WIDTH, HEIGHT), "SFML1");
-	win.setFramerateLimit(60);
+	win.setFramerateLimit(60.f);
 	sf::Color backgroundColor(sf::Color::Black);
 	globWin = &win;
 
 	// Clock for timing
 	sf::Clock clock;
 
-	// Easy access to real time keyboard input using map
+	// Easy access to real time keyboard input(RTI) using map
 	std::map<int, bool> keys;
 
 	// Canvas and texture initialization
 	sf::Image im;
 	im.create(win.getSize().x, win.getSize().y);
-	updateCnv(im);
 	sf::Texture im_t;
 	im_t.loadFromImage(im);
 	sf::Sprite im_s(im_t);
@@ -97,11 +101,12 @@ int main(int argc, char* argv[])
 	double centerY = 0.f;
 	double limit = 2.f;
 	int max_iter = 30;
+	bool isCnvToUpdate = true;
 
 	clock.restart();
 	while(win.isOpen())
 	{
-		sf::Time frameStart = clock.restart(); 
+		sf::Time frameStart = clock.getElapsedTime(); 
 		// Event checking loop
 		for(sf::Event event; win.pollEvent(event);)
 		{
@@ -114,27 +119,19 @@ int main(int argc, char* argv[])
 
 				// Keyboard event
 				case sf::Event::KeyPressed:
-					keys[event.key.code] = true; // real time event
+					keys[event.key.code] = true; // real time input
 
-					// These events are not used for real time 
+					// These events are not used for real input 
 					switch(event.key.code)
 					{
 						case sf::Keyboard::Escape:
 							win.close();
 						break;
-						case sf::Keyboard::Q:
-							limit *= 1.f-0.1f;
-							updateCnv(im, max_iter, limit, centerX, centerY);
-						break;
-						case sf::Keyboard::A:
-							limit *= 1.f+0.1f;
-							updateCnv(im, max_iter, limit, centerX, centerY);
-						break;
 					}
 				break;
 
 				case sf::Event::KeyReleased:
-					keys[event.key.code] = false; //real time event
+					keys[event.key.code] = false; // real time event
 				break;
 
 				// Updating window rendering if it has been resized
@@ -143,14 +140,72 @@ int main(int argc, char* argv[])
 					im.create(win.getSize().x, win.getSize().y);
 					im_t.loadFromImage(im);
 					im_s.setTextureRect(sf::IntRect(0, 0, win.getSize().x, win.getSize().y));
-					updateCnv(im, max_iter, limit, centerX, centerY);
+					isCnvToUpdate = true;
 				break;
 
 				default: break;
 			}
 		}
+		// Checking what to do with RTI
+
+		// Fractal zooming
+		if(keys[sf::Keyboard::E])
+		{
+			limit *= 1.f-0.1f;
+			isCnvToUpdate = true;
+		}
+		if(keys[sf::Keyboard::Q])
+		{	
+			limit *= 1.f+0.1f;
+			isCnvToUpdate = true;
+		}
+
+		// Moving on complex plane
+		double deltaMoveFactor = 0.08f*(limit / (limit + 0.2f));
+		if(keys[sf::Keyboard::W]) // Up
+		{	
+			centerY += -deltaMoveFactor;
+			isCnvToUpdate = true;
+		}
+		if(keys[sf::Keyboard::S]) // Down
+		{	
+			centerY += +deltaMoveFactor;
+			isCnvToUpdate = true;
+		}
+		if(keys[sf::Keyboard::A]) // Left
+		{	
+			centerX += -deltaMoveFactor;
+			isCnvToUpdate = true;
+		}
+		if(keys[sf::Keyboard::D]) // Right
+		{	
+			centerX += +deltaMoveFactor;
+			isCnvToUpdate = true;
+		}
+
+		// Max iteration settings
+		if(keys[sf::Keyboard::R])
+		{
+			max_iter += 1;
+			isCnvToUpdate = true;
+		}
+		if(keys[sf::Keyboard::F])
+		{
+			if(max_iter != 1)
+			{
+				max_iter -= 1;
+				isCnvToUpdate = true;
+			}
+		}
+
+
 		// Texture update from image 
-		im_t.update(im);
+		if(isCnvToUpdate)
+		{
+			updateCnv(im, max_iter, limit, centerX, centerY);
+			im_t.update(im);
+			isCnvToUpdate = false;
+		}
 
 
 		// Clearing window 

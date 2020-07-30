@@ -7,7 +7,7 @@ BIN_DIR = ../bin/
 BIN_OUT = $(BIN_DIR)Mandelbrot
 
 COMPILER = g++
-COMPILER_OPTIONS = -std=c++17 
+COMPILER_OPTIONS = -std=c++17 -Ofast
 
 SFML_LIB = -lsfml-graphics
 SFML_LIB += -lsfml-window
